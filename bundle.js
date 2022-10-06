@@ -28462,8 +28462,26 @@ const camera = new PerspectiveCamera(75, canvas.clientWidth/ canvas.clientHeight
 camera.position.z = 3; // Z let's you move backwards and forwards. X is sideways, Y is upward and do
 scene.add( camera );
 
+window.addEventListener("mousemove", (event) => {
+    const position = getMousePosition(event);
+    camera.position.x = Math.sin(position.x * Math.PI * 2) * 2;
+    camera.position.z = Math.cos(position.x * Math.PI * 2) * 2;
+    camera.position.y = position.y * 3;
+    camera.lookAt(cubeMesh.position);
+  });
+  
+function getMousePosition(event){
+    const position = new Vector2 ();
+    const bounds = canvas.getBoundingClientRect();
+
+    position.x = ((event.clientX - bounds.left) / (bounds.right - bounds.left)) * 2 - 1;
+    position.y = -((event.clientY - bounds.top) / (bounds.bottom - bounds.top)) * 2 + 1;
+      
+    return position;
+}
 //4 The Renderer
-const renderer = new WebGLRenderer({ canvas });
+const renderer = new WebGLRenderer({ canvas }); 
+renderer.setPixelRatio(Math.min (window.devicePixelRatio, 2));
 renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
 // 5 Responsivity
