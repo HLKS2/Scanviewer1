@@ -1,5 +1,5 @@
-import {Scene, BoxGeometry, MeshBasicMaterial, Mesh, PerspectiveCamera, WebGLRenderer} from 'three';
-
+import {Scene, BoxGeometry, MeshBasicMaterial, Mesh, PerspectiveCamera, WebGLRenderer, Vector2} from 'three';
+import { OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 //1 The scene
 const scene = new Scene()
 const canvas = document.getElementById('three-canvas');
@@ -39,20 +39,18 @@ window.addEventListener('resize', () => {
     camera.aspect = canvas.clientWidth / canvas.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-});
+})
 
+//6 Contorls
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
 
-
-//6 Animation
+//7 Animation
 function animate() {
     orangeCube.rotation.x += 0.01;
     orangeCube.rotation.z += 0.01;
 
-    greenCube.rotation.x += 0.015;
-    greenCube.rotation.z += 0.015;
-
-    blueCube.rotation.x += 0.005;
-    blueCube.rotation.z += 0.005;
+    controls.update();
 
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
