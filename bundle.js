@@ -28614,6 +28614,128 @@ class Scene extends Object3D {
 
 }
 
+class SphereGeometry extends BufferGeometry {
+
+	constructor( radius = 1, widthSegments = 32, heightSegments = 16, phiStart = 0, phiLength = Math.PI * 2, thetaStart = 0, thetaLength = Math.PI ) {
+
+		super();
+
+		this.type = 'SphereGeometry';
+
+		this.parameters = {
+			radius: radius,
+			widthSegments: widthSegments,
+			heightSegments: heightSegments,
+			phiStart: phiStart,
+			phiLength: phiLength,
+			thetaStart: thetaStart,
+			thetaLength: thetaLength
+		};
+
+		widthSegments = Math.max( 3, Math.floor( widthSegments ) );
+		heightSegments = Math.max( 2, Math.floor( heightSegments ) );
+
+		const thetaEnd = Math.min( thetaStart + thetaLength, Math.PI );
+
+		let index = 0;
+		const grid = [];
+
+		const vertex = new Vector3();
+		const normal = new Vector3();
+
+		// buffers
+
+		const indices = [];
+		const vertices = [];
+		const normals = [];
+		const uvs = [];
+
+		// generate vertices, normals and uvs
+
+		for ( let iy = 0; iy <= heightSegments; iy ++ ) {
+
+			const verticesRow = [];
+
+			const v = iy / heightSegments;
+
+			// special case for the poles
+
+			let uOffset = 0;
+
+			if ( iy == 0 && thetaStart == 0 ) {
+
+				uOffset = 0.5 / widthSegments;
+
+			} else if ( iy == heightSegments && thetaEnd == Math.PI ) {
+
+				uOffset = - 0.5 / widthSegments;
+
+			}
+
+			for ( let ix = 0; ix <= widthSegments; ix ++ ) {
+
+				const u = ix / widthSegments;
+
+				// vertex
+
+				vertex.x = - radius * Math.cos( phiStart + u * phiLength ) * Math.sin( thetaStart + v * thetaLength );
+				vertex.y = radius * Math.cos( thetaStart + v * thetaLength );
+				vertex.z = radius * Math.sin( phiStart + u * phiLength ) * Math.sin( thetaStart + v * thetaLength );
+
+				vertices.push( vertex.x, vertex.y, vertex.z );
+
+				// normal
+
+				normal.copy( vertex ).normalize();
+				normals.push( normal.x, normal.y, normal.z );
+
+				// uv
+
+				uvs.push( u + uOffset, 1 - v );
+
+				verticesRow.push( index ++ );
+
+			}
+
+			grid.push( verticesRow );
+
+		}
+
+		// indices
+
+		for ( let iy = 0; iy < heightSegments; iy ++ ) {
+
+			for ( let ix = 0; ix < widthSegments; ix ++ ) {
+
+				const a = grid[ iy ][ ix + 1 ];
+				const b = grid[ iy ][ ix ];
+				const c = grid[ iy + 1 ][ ix ];
+				const d = grid[ iy + 1 ][ ix + 1 ];
+
+				if ( iy !== 0 || thetaStart > 0 ) indices.push( a, b, d );
+				if ( iy !== heightSegments - 1 || thetaEnd < Math.PI ) indices.push( b, c, d );
+
+			}
+
+		}
+
+		// build geometry
+
+		this.setIndex( indices );
+		this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+		this.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+		this.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+
+	}
+
+	static fromJSON( data ) {
+
+		return new SphereGeometry( data.radius, data.widthSegments, data.heightSegments, data.phiStart, data.phiLength, data.thetaStart, data.thetaLength );
+
+	}
+
+}
+
 class MeshLambertMaterial extends Material {
 
 	constructor( parameters ) {
@@ -31719,7 +31841,7 @@ const canvas = document.getElementById('three-canvas');
 
 const loader = new TextureLoader();
 
-const geometry = new BoxGeometry(0.5, 0.5, 0.5);
+const geometry = new SphereGeometry(4);
 const orangeMaterial = new MeshLambertMaterial( {color: 0xfff909} );
 const greenMaterial = new MeshLambertMaterial( {color: 0xffffff,
 map: loader.load('./sample.png')
@@ -31727,18 +31849,18 @@ map: loader.load('./sample.png')
 
 const blueMaterial = new MeshLambertMaterial( {color: 0x00ffcc} );
 
-const orangeCube = new Mesh( geometry, orangeMaterial );
-scene.add( orangeCube );
+const sun = new Mesh( geometry, orangeMaterial );
+scene.add( sun );
+
+const earth = new Mesh( geometry, blueMaterial );
+earth.scale.set (0.2, 0.2, 0.2);
+earth.position.x += 20;
+sun.add(earth);
 
 const greenCube = new Mesh( geometry, greenMaterial );
-greenCube.position.x += 1;
+greenCube.position.x += 20;
 greenCube.scale.set(2,2,2);
-scene.add(greenCube);
-
-const blueCube = new Mesh( geometry, blueMaterial );
-blueCube.position.x -= 1;
-
-scene.add(blueCube);
+earth.add(greenCube);
 
 //3 The Camera
 const camera = new PerspectiveCamera(75, canvas.clientWidth/ canvas.clientHeight);
@@ -31796,15 +31918,11 @@ cameraControls.dollyToCursor = true;
 function animate() {
     const delta = clock.getDelta();
       cameraControls.update( delta );
-      renderer.render( scene, camera );
+
+      sun.rotation.y += 0.01;
+    earth.rotation.y += 0.006;
+      renderer.render( scene, camera );      
     requestAnimationFrame(animate);
 }
-animate();
-function animatecube() {
-    orangeCube.rotation.x += 0.01;
-    orangeCube.rotation.z += 0.01;
-    renderer.render(scene, camera);
-    requestAnimationFrame(animatecube);
-}
 
-animatecube();
+animate();

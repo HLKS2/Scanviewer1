@@ -21,7 +21,8 @@ import {
     DirectionalLight,
     TextureLoader,
     AmbientLight,
-    HemisphereLightProbe
+    HemisphereLightProbe,
+    SphereGeometry
 } from 'three';
 import CameraControls from 'camera-controls';
 
@@ -34,7 +35,7 @@ const canvas = document.getElementById('three-canvas');
 
 const loader = new TextureLoader();
 
-const geometry = new BoxGeometry(0.5, 0.5, 0.5);
+const geometry = new SphereGeometry(4);
 const orangeMaterial = new MeshLambertMaterial( {color: 0xfff909} );
 const greenMaterial = new MeshLambertMaterial( {color: 0xffffff,
 map: loader.load('./sample.png')
@@ -42,18 +43,18 @@ map: loader.load('./sample.png')
 
 const blueMaterial = new MeshLambertMaterial( {color: 0x00ffcc} );
 
-const orangeCube = new Mesh( geometry, orangeMaterial );
-scene.add( orangeCube );
+const sun = new Mesh( geometry, orangeMaterial );
+scene.add( sun );
+
+const earth = new Mesh( geometry, blueMaterial );
+earth.scale.set (0.2, 0.2, 0.2);
+earth.position.x += 20;
+sun.add(earth);
 
 const greenCube = new Mesh( geometry, greenMaterial );
-greenCube.position.x += 1;
+greenCube.position.x += 20;
 greenCube.scale.set(2,2,2);
-scene.add(greenCube);
-
-const blueCube = new Mesh( geometry, blueMaterial );
-blueCube.position.x -= 1;
-
-scene.add(blueCube);
+earth.add(greenCube);
 
 //3 The Camera
 const camera = new PerspectiveCamera(75, canvas.clientWidth/ canvas.clientHeight);
@@ -111,15 +112,11 @@ cameraControls.dollyToCursor = true;
 function animate() {
     const delta = clock.getDelta();
       cameraControls.update( delta );
-      renderer.render( scene, camera );
+
+      sun.rotation.y += 0.01;
+    earth.rotation.y += 0.006;
+      renderer.render( scene, camera );      
     requestAnimationFrame(animate);
 }
-animate();
-function animatecube() {
-    orangeCube.rotation.x += 0.01;
-    orangeCube.rotation.z += 0.01;
-    renderer.render(scene, camera);
-    requestAnimationFrame(animatecube);
-}
 
-animatecube();
+animate();
